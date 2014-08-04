@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+
+    <title>AutoComplete</title>
+
+    <link rel=stylesheet href="./CodeMirror/doc/docs.css">
+    <link rel="stylesheet" href="./CodeMirror/lib/codemirror.css">
+    <link rel="stylesheet" href="./CodeMirror/addon/hint/show-hint.css">
+	<link rel="stylesheet" href="./CodeMirror/theme/solarized.css">
+
+    <link rel="stylesheet" href="./css/showHintWidgetUI.css">
+    <link rel="stylesheet" href="./css/pure.css">
+    <link rel="stylesheet" href="./css/layouts/side-menu.css">
+
+<style type="text/css">
+        /*CSS for textarea*/
+
+    textarea
+    {
+        width: 200px;
+        height: 90px;
+        border-radius: 3px;
+        border: 1px solid #CCC;
+        padding: 8px;
+        font-weight: 200;
+        font-size: 15px;
+        font-family: Verdana;
+        box-shadow: 1px 1px 5px #CCC;
+    }
+    textarea:hover
+    {
+        width: 200px;
+        height: 90px;
+        border-radius: 3px;
+        border: 1px solid #aaa;
+        padding: 8px;
+        font-weight: 200;
+        font-size: 15px;
+        font-family: Verdana;
+        box-shadow: 1px 1px 5px #CCC;
+    }
+</style>
+
+  
+    <!--[if lte IE 8]>
+        <link rel="stylesheet" href="css/layouts/side-menu-old-ie.css">
+    <![endif]-->
+    <!--[if gt IE 8]><!-->
+    <!--<![endif]-->
+  
+    <script src="js/ui.js"></script>
+    <script type="text/javascript" src="./js/mousetrap.min.js"></script>
+    <script type="text/javascript" src="./js/jquery.js"></script>
+
+<!--     codemirror scripts
+ -->
+    <script src="./CodeMirror/lib/codemirror.js"></script>
+    <script src="./CodeMirror/mode/javascript/javascript.js"></script>
+    <script src="./CodeMirror/mode/clike/clike.js"></script>
+    <script src="./CodeMirror/addon/hint/show-hint.js"></script>
+    <script src="./CodeMirror/addon/hint/anyword-hint.js"></script>
+
+</head>
+<body>
+
+<div>
+
+    <div id="main">
+        <div class="header">
+            <h1>AutoComplete</h1>
+            <h2>Demo for AutoCompete Feature in Online Text Editor</h2>
+        </div>
+
+        <div class="content">
+            <h2>Introduction</h2>
+            <p>
+            	The following is the demostration of <strong>Intellisense</strong>, online service deployed at Hackerrank that returns smart autocomplete results (similar to Eclipse IDE) for various programming languages. The server has a load balancer and can handle heavy load easily.
+            </p>
+            <h2>Supported Languages</h2>
+            <p>
+                <ul>
+                    <li>C/C++</li>
+                    <li>C#</li>
+                    <li>Java</li>
+                </ul>
+            </p>
+
+            <h2>Key Bindings</h2>
+            <p>
+            	AutoComplete results corresponding to the code are returned on pressing <strong>"Ctrl+space"</strong>.
+            </p>
+            <div>
+            <label for="language">Select Language</label>
+                <select id="language">
+                    <option value="c">C</option>
+                    <option value="cpp">C++</option>
+                    <option value="csharp">C#</option>
+                    <option value="java" selected>Java</option>
+                </select>
+            </div>
+            <h2 class="content-subhead">CodeMirror Editor</h2>
+            <textarea id="editorArea" class="mousetrap" style="height:400px;width:100%">public class test{ public static void main(String args[]){System.out.p}}</textarea>
+
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+
+$(document).ready(function(){
+
+	var currentLanguage=$('#language')[0].value;
+
+    var defaultText={
+    	"java": "public class test{\npublic static void main(String args[]){\n    System.out.println(\"Hello World!!!\");\n  }\n}",
+    	"cpp": "#include <iostream>\n#include <vector>\n#include <sstream>\n#include <map>\n#include <set>\n#include <stack>\n#include <queue>\n#include <algorithm>\n#include <utility>\n#include <string>\n\nusing namespace std;\n\nint main(){\n  return 0;\n}\n",
+    	"c": "#include <stdio.h>\n#include <string.h>\n#include <math.h>\n#include <stdlib.h>\n\n\nint solveMeFirst(int a, int b) {\n  return a+b;\n}\nint main() {\n  int num1,num2;\n  scanf(\"%d %d\",&num1,&num2);\n  int sum; \n  sum = solveMeFirst(num1,num2);\n  printf(\"%d\",sum);\n  return 0;\n}",
+    	"csharp": "using System;\nusing System.Collections.Generic;\nusing System.IO;\nclass Solution {\n    static int solveMeFirst(int a, int b) { \n        return a+b;\n    }\n    static void Main(String[] args) {\n        int val1 = Convert.ToInt32(Console.ReadLine());\n        int val2 = Convert.ToInt32(Console.ReadLine());\n        int sum = solveMeFirst(val1,val2);\n        Console.OpenStandardInput();StringComparison\n    }\n}      "
+    }
+
+    var modes={
+    	"java":"text/x-java",
+    	"cpp":"text/x-c++src",
+    	"c":"text/x-csrc",
+    	"csharp":"text/x-csharp"
+    }
+
+    function loadLanguage(){
+    	eleEditor.setValue(defaultText[currentLanguage]);
+		eleEditor.setOption("mode", modes[currentLanguage]);
+    }
+
+	$( "#language" ).change(function() {
+		currentLanguage=$('#language')[0].value;
+		loadLanguage();
+	});
+
+    var editorArea=document.getElementById("editorArea");
+    var eleEditor = CodeMirror.fromTextArea(editorArea, {
+        lineNumbers: true,
+        extraKeys: {
+            "Ctrl-Space": function(cm){
+                getSuggestions(cm);
+            },
+        },
+        value: defaultText[currentLanguage],
+        mode:  modes[currentLanguage],
+        theme: "solarized light"
+    });
+
+    function filterSuggestions(list, token) {
+        var found, iterateList, matched, ptrToken, ptrWord, word;
+        token = token.toLowerCase();
+        found = [];
+        iterateList = 0;
+        while (iterateList < list.length) {
+          word = list[iterateList].text.toLowerCase();
+          matched = 1;
+          ptrWord = 0;
+          ptrToken = 0;
+          while (ptrToken < token.length) {
+            while ((word[ptrWord] !== token[ptrToken]) && (ptrWord < word.length)) {
+              ptrWord++;
+            }
+            if (ptrWord === word.length) {
+              matched = 0;
+              break;
+            }
+            ptrToken++;
+          }
+          if (matched === 1) {
+            found.push(list[iterateList]);
+          }
+          iterateList++;
+        }
+        return found;
+    }
+
+    function parseJson(cm, obj){
+        var data = JSON.parse(obj);
+        var retHintValues=[];
+        $.each(data,function(index,data){
+	        var autoCompleteObject;
+	        autoCompleteObject = {};
+	        autoCompleteObject.text = data.completion;
+	        if (data.type === "") {
+	            data.type = " ";
+	        }
+	        autoCompleteObject.displayText = data.menu;
+	        autoCompleteObject.type = data.type;
+	        autoCompleteObject.completion = data.completion;
+	        autoCompleteObject.menu = data.menu;
+	        autoCompleteObject.info = data.info;
+	        autoCompleteObject.render = function(elt, self, data) {
+	          var divCompletionText, divMenuText, divTypeText;
+	          if (data.type === " " || data.type === "") {
+	            if (data.completion[data.completion.length - 1] === "(" || data.completion[data.completion.length - 1] === ")") {
+	              data.type = "f";
+	            } else {
+	              data.type = "v";
+	            }
+	          }
+	          if (data.completion[data.completion.length - 1] === "(") {
+	            data.completion += ")";
+	          }
+	          divTypeText = document.createElement("DIV");
+	          divTypeText.className = "CodeMirror-hint-divTypeText";
+	          divTypeText.appendChild(document.createTextNode(data.type));
+	          divCompletionText = document.createElement("DIV");
+	          divCompletionText.className = "CodeMirror-hint-divCompletionText";
+	          divCompletionText.appendChild(document.createTextNode(" " + data.completion + " "));
+	          divMenuText = document.createElement("DIV");
+	          divMenuText.className = "CodeMirror-hint-divMenuText";
+	          divMenuText.appendChild(document.createTextNode(data.menu + " "));
+	          elt.appendChild(divTypeText);
+	          elt.appendChild(divCompletionText);
+	          elt.appendChild(divMenuText);
+	          elt.style.display = "table-row";
+	      };
+          retHintValues.push(autoCompleteObject);
+        });
+        var tempRetHintValues = retHintValues;
+        options = {
+          completeSingle: false,
+          hint: function(cm) {
+            var inner, token;
+            retHintValues = tempRetHintValues;
+            token = cm.getTokenAt(cm.getCursor()).string;
+            token = cleanToken(token);
+            if (token.length > 0) {
+              retHintValues = filterSuggestions(retHintValues, token);
+            }
+            inner = {
+              from: cm.getCursor(),
+              to: cm.getCursor(),
+              list: []
+            };
+            inner.list = retHintValues;
+
+            CodeMirror.on(inner, "pick", function(completion) {
+              var startPoint, tempInnerEnd, tempInnerStart;
+              startPoint = inner.to.ch - token.length;
+              tempInnerStart = {};
+              tempInnerStart.line = inner.from.line;
+              tempInnerStart.ch = startPoint;
+              tempInnerEnd = {};
+              tempInnerEnd.line = inner.to.line;
+              tempInnerEnd.ch = inner.to.ch;
+              cm.replaceRange("", tempInnerStart, tempInnerEnd);
+            });
+            return inner;
+          }
+        };
+        CodeMirror.showHint(cm, options.hint, options);
+    }
+
+    function getFullCodeOffsetLanguage (cm) {
+        var autoCompleteInfo, code, headCode, language, lineCh, lineNum, numHeadLines, offset, tailCode, token;
+        language = currentLanguage;
+        code = "";
+        offset = 0;
+        lineCh = cm.getCursor();
+        lineNum = 0;
+        while (lineNum < lineCh["line"]) {
+          offset += cm.getLine(lineNum).length + 1;
+          lineNum++;
+        }
+        offset += lineCh["ch"];
+        code += cm.getValue();
+        code += "\n";
+
+        token = cm.getTokenAt(lineCh).string;
+        token = cleanToken(token);
+        autoCompleteInfo = {
+          column: lineCh["ch"] + 1,
+          WantDocumentationForEveryCompletionResult: "false",
+          line: lineCh["line"] + 1,
+          wordToComplete: token,
+          code: code,
+          offset: offset,
+          fileType: language
+        };
+        return autoCompleteInfo;
+    }
+
+    function cleanToken(token) {
+        var charCode, iterateToken;
+        iterateToken = 0;
+        while (iterateToken < token.length) {
+          charCode = token.charCodeAt(iterateToken);
+          if ((charCode > 47 && charCode < 58) || (charCode > 64 && charCode < 91) || (charCode > 96 && charCode < 123) || token[iterateToken] === '_') {
+            break;
+          }
+          iterateToken++;
+        }
+        token = token.substr(iterateToken);
+        return token;
+    }
+
+    function getSuggestions(cm){
+    	var data=getFullCodeOffsetLanguage(cm);
+        var address="https://autocomplete.hackerrank.com/autocomplete";
+        var hintItems;
+        $.ajax({
+            type: "POST",
+            url: address,
+            data: data,
+            dataType: "text",
+            success: function (data){
+                parseJson(cm, data);
+            }
+        });
+    }
+
+	loadLanguage();
+
+});
+</script>
+
+</body>
+</html>

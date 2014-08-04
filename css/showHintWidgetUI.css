@@ -1,0 +1,44 @@
+
+	.CodeMirror-hint-divTypeText {
+	    padding-left: 5px;
+	    padding-right: 5px;
+	    color: white;
+	    border: 2px solid;
+	    display: table-cell;
+	    background-color: #4551F5;
+	    border-radius: 2px;
+	    text-align: center;
+	    font-weight: bold;
+	}
+
+	.CodeMirror-hint .CodeMirror-hint-divCompletionText {
+	    display: table-cell;
+	    text-overflow: ellipsis;
+	    overflow: hidden;
+	    color: #4686E8;
+	}
+
+	.CodeMirror-hint-active .CodeMirror-hint-divCompletionText {
+	    display: table-cell;
+	    text-overflow: ellipsis;
+	    overflow: hidden;
+	    color: white;
+	}
+
+	.CodeMirror-hint .CodeMirror-hint-divMenuText {
+	    display: table-cell;
+	    text-overflow: ellipsis;
+	    padding-right: 20px;
+	    overflow: hidden;
+	    color: black;
+	}
+
+	.CodeMirror-hint-active .CodeMirror-hint-divMenuText {
+	    display: table-cell;
+	    text-overflow: ellipsis;
+	    padding-right: 20px;
+	    overflow: hidden;
+	    color: white;
+	    font-weight: bold;
+	}
+
