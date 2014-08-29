@@ -69,6 +69,7 @@
         </div>
 
         <div class="content">
+            <button class="pure-button" id="collaborate" type="button">Collaborate</button>
             <h2>Introduction</h2>
             <p>
             	The following is the demostration of <strong>Intellisense</strong>, online service deployed at Hackerrank that returns smart autocomplete results (similar to Eclipse IDE) for various programming languages. The server has a load balancer and can handle heavy load easily.
@@ -86,7 +87,7 @@
             <p>
             	AutoComplete results corresponding to the code are returned on pressing <strong>"Ctrl+space"</strong>.
             </p>
-            <div>
+            <div class="pure-form">
             <label for="language">Select Language</label>
                 <select id="language">
                     <option value="c">C</option>
@@ -94,6 +95,8 @@
                     <option value="csharp">C#</option>
                     <option value="java" selected>Java</option>
                 </select>
+                <label for="syncCompletes">Sync AutoCompletes</label>
+                <input type="checkbox" checked name="syncCompletes" id="syncCompletes">
             </div>
             <h2 class="content-subhead">CodeMirror Editor</h2>
             <textarea id="editorArea" class="mousetrap" style="height:400px;width:100%">public class test{ public static void main(String args[]){System.out.p}}</textarea>
@@ -104,7 +107,6 @@
                 Personal Website:- <a href="https://web.iiit.ac.in/~abhishek.mittal">https://web.iiit.ac.in/~abhishek.mittal </a>
             </p>
             </div>
-
         </div>
     </div>
 </div>
@@ -144,7 +146,7 @@ $(document).ready(function(){
         lineNumbers: true,
         extraKeys: {
             "Ctrl-Space": function(cm){
-                getSuggestions(cm);
+                getSuggestionsAndBroadcast(cm);
             },
         },
         value: defaultText[currentLanguage],
@@ -301,6 +303,41 @@ $(document).ready(function(){
         return token;
     }
 
+    function getSuggestionsAndBroadcast(cm){
+        if($('input[name="syncCompletes"]:checked').length > 0){
+            var data = getFullCodeOffsetLanguage(cm);
+            TogetherJS.send({
+              type: "displayHints", 
+              displayHints: data,
+            })
+        }
+        getSuggestions(cm);
+    }
+
+    TogetherJS.hub.on("displayHints", function (msg) {
+      if (! msg.sameUrl) {
+        // Usually you'll test for this to discard messages that came
+        // from a user at a different page
+        return;
+      }
+      displayBroadcastSuggestions(msg.displayHints);
+    });
+
+    function displayBroadcastSuggestions(data){
+        var cm = eleEditor;
+        var address="https://autocomplete.hackerrank.com/autocomplete";
+        var hintItems;
+        $.ajax({
+            type: "POST",
+            url: address,
+            data: data,
+            dataType: "text",
+            success: function (retdata){
+                parseJson(cm, retdata);
+            }
+        });
+    }
+
     function getSuggestions(cm){
     	var data=getFullCodeOffsetLanguage(cm);
         var address="https://autocomplete.hackerrank.com/autocomplete";
@@ -320,6 +357,11 @@ $(document).ready(function(){
 
 });
 </script>
+    <script src="./js/together.js"></script>
+    <script>
+        document.getElementById("collaborate")
+          .addEventListener("click", TogetherJS, false);
+      </script>
 
 </body>
 </html>
